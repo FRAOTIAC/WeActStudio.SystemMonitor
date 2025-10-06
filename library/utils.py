@@ -38,9 +38,22 @@ def apply_theme_to_titlebar(root,is_dark):
             root.wm_attributes("-alpha", 1)
 
 def show_messagebox(message, title="", delay=3000):
+    # Check if we have a display available (X server)
+    # In headless/SSH environments without X forwarding, skip GUI messagebox
+    if platform.system() != "Windows" and not os.environ.get('DISPLAY'):
+        # No display available, just print to console
+        print(f"[{title}] {message}" if title else message)
+        return lambda: None  # Return a no-op function
+    
     def create_and_run_messagebox():
         nonlocal root
-        root = tk.Tk()
+        try:
+            root = tk.Tk()
+        except Exception as e:
+            # If Tk fails to initialize, fall back to console output
+            print(f"[{title}] {message}" if title else message)
+            print(f"[WARNING] GUI unavailable: {e}")
+            return
         root.title(title)
 
         style = ttk.Style()
@@ -62,7 +75,9 @@ def show_messagebox(message, title="", delay=3000):
 
         root.resizable(False, False)
         root.attributes('-topmost', True)
-        root.attributes("-toolwindow", True)
+        # -toolwindow is Windows-only attribute
+        if platform.system() == 'Windows':
+            root.attributes("-toolwindow", True)
 
         label = tk.Label(root, text=message, anchor="w")
         label.grid(row=1, column=0, padx=5, pady=10, sticky="w")
@@ -88,15 +103,23 @@ def show_messagebox(message, title="", delay=3000):
 
     root = None
     messagebox_thread = threading.Thread(target=create_and_run_messagebox)
+    messagebox_thread.daemon = True  # Make thread daemon so it doesn't block exit
     messagebox_thread.start()
 
-    while root is None:
-        pass
+    # Wait for root to be created, but with timeout to avoid infinite loop
+    timeout_counter = 0
+    while root is None and timeout_counter < 50:  # 5 seconds max
+        time.sleep(0.1)
+        timeout_counter += 1
 
     def close_messagebox():
-        if root and root.winfo_exists():
-            print("Closing message box...") 
-            root.after(0, root.destroy)
+        if root and hasattr(root, 'winfo_exists'):
+            try:
+                if root.winfo_exists():
+                    print("Closing message box...") 
+                    root.after(0, root.destroy)
+            except:
+                pass  # Ignore errors when closing
 
     return close_messagebox
 
@@ -109,15 +132,15 @@ def app_is_running(lockfile):
             pid = int(f.read().strip())
             
         p = psutil.Process(pid)
-        process_path = Path(p.exe()).parent
-        expected_path = Path(__file__).resolve().parent.parent / "Python"
         cmdline = p.cmdline()
         lockfile_name = Path(lockfile).stem
-        if cmdline and len(cmdline) > 1 and lockfile_name in cmdline[1] and process_path.samefile(expected_path) and p.is_running():
+        
+        # Check if the process is running and executing the same script
+        if cmdline and len(cmdline) > 1 and lockfile_name in cmdline[1] and p.is_running():
             print("Process is running")
             return True
             
-    except (ValueError, psutil.NoSuchProcess, psutil.AccessDenied):
+    except (ValueError, psutil.NoSuchProcess, psutil.AccessDenied, FileNotFoundError):
         pass
 
     try:
@@ -332,8 +355,16 @@ def WindowToast(title, message, icon=None):
         return close
     else:
         return None
-    
-from pynput import mouse, keyboard
+
+# Import pynput optionally - it requires X display and is only needed for InputMonitor feature
+try:
+    from pynput import mouse, keyboard
+    PYNPUT_AVAILABLE = True
+except ImportError:
+    PYNPUT_AVAILABLE = False
+    mouse = None
+    keyboard = None
+
 class InputMonitor:
     """
     A class to monitor keyboard and mouse activities with automatic resource cleanup.
@@ -364,6 +395,10 @@ class InputMonitor:
         
     def start(self):
         """Start monitoring input events"""
+        if not PYNPUT_AVAILABLE:
+            print("[WARNING] InputMonitor: pynput not available, input monitoring disabled")
+            return
+            
         if not self._running:
             self._running = True
             # Start mouse listener

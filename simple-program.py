@@ -31,19 +31,21 @@ sys.path.append(os.path.dirname(__file__))
 # Import only the modules for LCD communication
 from library.lcd.lcd_comm import Orientation
 from library.lcd.lcd_comm_weact_a import LcdComm_WeAct_A
+from library.lcd.lcd_comm_weact_b import LcdComm_WeAct_B
 from library.lcd.lcd_simulated import LcdSimulated
 from library.log import logger
 
 # Set your COM port e.g. COM3 for Windows, /dev/ttyACM0 for Linux, etc. or "AUTO" for auto-discovery
 # COM_PORT = "/dev/ttyACM0"
 # COM_PORT = "COM5"
-COM_PORT = "AUTO"
+COM_PORT = "/dev/ttyACM0"  # Changed from AUTO to explicit port
 
 # Display revision:
-# - A_320x480  for WeAct Studio Display FS V1
+# - A_320x480  for WeAct Studio Display FS V1 (3.5 inch)
+# - B_80x160   for WeAct Studio Display FS 0.96 inch
 # - SIMU_320x480  for 320x480 simulated LCD (image written in screencap.png)
 # - SIMU_480x800  for 480x800 simulated LCD (image written in screencap.png)
-REVISION = "A_320x480"
+REVISION = "B_80x160"
 
 stop = False
 
@@ -64,8 +66,11 @@ if __name__ == "__main__":
     # Build your LcdComm object based on the HW revision
     lcd_comm = None
     if REVISION == "A_320x480":
-        logger.info("Selected Hardware Revision A")
+        logger.info("Selected Hardware Revision A (3.5 inch)")
         lcd_comm = LcdComm_WeAct_A(com_port=COM_PORT, display_width=320, display_height=480)
+    elif REVISION == "B_80x160":
+        logger.info("Selected Hardware Revision B (0.96 inch)")
+        lcd_comm = LcdComm_WeAct_B(com_port=COM_PORT, display_width=80, display_height=160)
     elif REVISION == "SIMU_320x480":
         logger.info("Selected 320x480 Simulated LCD")
         lcd_comm = LcdSimulated(display_width=320, display_height=480)
@@ -92,6 +97,7 @@ if __name__ == "__main__":
     lcd_comm.SetBackplateLedColor(led_color=(255, 255, 255))
 
     # Set orientation (screen starts in Portrait)
+    # Both 0.96" and 3.5" use LANDSCAPE orientation
     lcd_comm.SetOrientation(orientation=Orientation.LANDSCAPE)
 
     # Define background picture
@@ -100,74 +106,108 @@ if __name__ == "__main__":
     # Display sample picture
     logger.debug("setting background picture")
     start = time.perf_counter()
-    lcd_comm.DisplayBitmap(background)
+    try:
+        lcd_comm.DisplayBitmap(background)
+    except Exception as e:
+        logger.warning(f"Could not load background image: {e}")
+        # Clear screen with black background if image not found
+        lcd_comm.Clear()
     end = time.perf_counter()
     logger.debug(f"background picture set (took {end - start:.3f} s)")
 
-    # Display sample text
-    lcd_comm.DisplayText("Basic text", 50, 85)
-
-    # Display custom text with solid background
-    lcd_comm.DisplayText("Custom italic multiline text\nright-aligned", 5, 120,
-                         font=Path(__file__).parent / "res" / "fonts" / "roboto" / "Roboto-Italic.ttf",
-                         font_size=20,
-                         font_color=(0, 0, 255),
-                         background_color=(255, 255, 0),
-                         align='right')
-
-    # Display custom text with transparent background
-    lcd_comm.DisplayText("Transparent bold text", 5, 180,
-                         font=Path(__file__).parent / "res" / "fonts" / "geforce" / "GeForce-Bold.ttf",
-                         font_size=30,
-                         font_color=(255, 255, 255),
-                         background_image=background)
+    # Display sample text (adjusted for screen size)
+    if REVISION == "B_80x160":
+        # Small screen (160x80 in landscape) - simplified display
+        lcd_comm.DisplayText("WeAct 0.96\"", 5, 5,
+                             font=Path(__file__).parent / "res" / "fonts" / "roboto" / "Roboto-Bold.ttf",
+                             font_size=10,
+                             font_color=(255, 255, 255))
+    else:
+        # Large screen - full display
+        lcd_comm.DisplayText("Basic text", 50, 85)
+        
+        lcd_comm.DisplayText("Custom italic multiline text\nright-aligned", 5, 120,
+                             font=Path(__file__).parent / "res" / "fonts" / "roboto" / "Roboto-Italic.ttf",
+                             font_size=20,
+                             font_color=(0, 0, 255),
+                             background_color=(255, 255, 0),
+                             align='right')
+        
+        lcd_comm.DisplayText("Transparent bold text", 5, 180,
+                             font=Path(__file__).parent / "res" / "fonts" / "geforce" / "GeForce-Bold.ttf",
+                             font_size=30,
+                             font_color=(255, 255, 255),
+                             background_image=background)
 
     # Display the current time and some progress bars as fast as possible
     bar_value = 0
     while not stop:
         start = time.perf_counter()
-        lcd_comm.DisplayText(str(datetime.now().time()), 160, 2,
-                             font=Path(__file__).parent / "res" / "fonts" / "roboto" / "Roboto-Bold.ttf",
-                             font_size=20,
-                             font_color=(255, 0, 0),
-                             background_image=background)
+        
+        if REVISION == "B_80x160":
+            # Small screen (160x80 in landscape) - horizontal layout
+            # Display time
+            time_str = datetime.now().strftime("%H:%M:%S")
+            lcd_comm.DisplayText(time_str, 5, 25,
+                                 font=Path(__file__).parent / "res" / "fonts" / "roboto" / "Roboto-Bold.ttf",
+                                 font_size=12,
+                                 font_color=(0, 255, 255))
+            
+            # Display a simple progress bar (horizontal)
+            lcd_comm.DisplayProgressBar(5, 45,
+                                        width=150, height=8,
+                                        min_value=0, max_value=100, value=bar_value,
+                                        bar_color=(0, 255, 0), bar_outline=True)
+            
+            # Display percentage text
+            lcd_comm.DisplayText(f"{bar_value}%", 65, 60,
+                                 font=Path(__file__).parent / "res" / "fonts" / "roboto" / "Roboto-Regular.ttf",
+                                 font_size=10,
+                                 font_color=(255, 255, 0))
+        else:
+            # Large screen - full display
+            lcd_comm.DisplayText(str(datetime.now().time()), 160, 2,
+                                 font=Path(__file__).parent / "res" / "fonts" / "roboto" / "Roboto-Bold.ttf",
+                                 font_size=20,
+                                 font_color=(255, 0, 0),
+                                 background_image=background)
 
-        lcd_comm.DisplayProgressBar(10, 40,
-                                    width=140, height=30,
-                                    min_value=0, max_value=100, value=bar_value,
-                                    bar_color=(255, 255, 0), bar_outline=True,
-                                    background_image=background)
+            lcd_comm.DisplayProgressBar(10, 40,
+                                        width=140, height=30,
+                                        min_value=0, max_value=100, value=bar_value,
+                                        bar_color=(255, 255, 0), bar_outline=True,
+                                        background_image=background)
 
-        lcd_comm.DisplayProgressBar(160, 40,
-                                    width=140, height=30,
-                                    min_value=0, max_value=19, value=bar_value % 20,
-                                    bar_color=(0, 255, 0), bar_outline=False,
-                                    background_image=background)
+            lcd_comm.DisplayProgressBar(160, 40,
+                                        width=140, height=30,
+                                        min_value=0, max_value=19, value=bar_value % 20,
+                                        bar_color=(0, 255, 0), bar_outline=False,
+                                        background_image=background)
 
-        lcd_comm.DisplayRadialProgressBar(98, 260, 25, 4,
-                                          min_value=0,
-                                          max_value=100,
-                                          value=bar_value,
-                                          angle_sep=0,
-                                          bar_color=(0, 255, 0),
-                                          font_color=(255, 255, 255),
-                                          background_image=background)
+            lcd_comm.DisplayRadialProgressBar(98, 260, 25, 4,
+                                              min_value=0,
+                                              max_value=100,
+                                              value=bar_value,
+                                              angle_sep=0,
+                                              bar_color=(0, 255, 0),
+                                              font_color=(255, 255, 255),
+                                              background_image=background)
 
-        lcd_comm.DisplayRadialProgressBar(222, 260, 40, 13,
-                                          min_value=0,
-                                          max_value=100,
-                                          angle_start=405,
-                                          angle_end=135,
-                                          angle_steps=10,
-                                          angle_sep=5,
-                                          clockwise=False,
-                                          value=bar_value,
-                                          bar_color=(255, 255, 0),
-                                          text=f"{10 * int(bar_value / 10)}°C",
-                                          font=Path(__file__).parent / "res" / "fonts" / "geforce" / "GeForce-Bold.ttf",
-                                          font_size=20,
-                                          font_color=(255, 255, 0),
-                                          background_image=background)
+            lcd_comm.DisplayRadialProgressBar(222, 260, 40, 13,
+                                              min_value=0,
+                                              max_value=100,
+                                              angle_start=405,
+                                              angle_end=135,
+                                              angle_steps=10,
+                                              angle_sep=5,
+                                              clockwise=False,
+                                              value=bar_value,
+                                              bar_color=(255, 255, 0),
+                                              text=f"{10 * int(bar_value / 10)}°C",
+                                              font=Path(__file__).parent / "res" / "fonts" / "geforce" / "GeForce-Bold.ttf",
+                                              font_size=20,
+                                              font_color=(255, 255, 0),
+                                              background_image=background)
 
         bar_value = (bar_value + 2) % 101
         end = time.perf_counter()

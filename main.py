@@ -46,7 +46,15 @@ try:
     from PIL import Image
     from tkinter import messagebox
     import tkinter as tk
-    from pynput import keyboard, mouse
+    # pynput is only needed for FREE_OFF feature (idle detection)
+    # It requires X display, so allow it to fail gracefully
+    try:
+        from pynput import keyboard, mouse
+        PYNPUT_AVAILABLE = True
+    except:
+        PYNPUT_AVAILABLE = False
+        print("[WARNING] pynput not available (needs X display). FREE_OFF feature will be disabled.")
+    
     if platform.system() == 'Windows':
         import win32api
         import win32con
@@ -103,7 +111,7 @@ from library.display import get_config_display_brightness
 
 # Start ...
 
-if get_config_display_free_off() == True:
+if get_config_display_free_off() == True and PYNPUT_AVAILABLE:
     display_free_off_tick = 0
     IDLE_THRESHOLD = 180  
     activity = True
@@ -138,6 +146,8 @@ if get_config_display_free_off() == True:
     keyboard_listener.start()
     mouse_listener.start()
     logger.info('display free off enabled')
+elif get_config_display_free_off() == True and not PYNPUT_AVAILABLE:
+    logger.warning('FREE_OFF is enabled but pynput is not available. Feature disabled.')
 
 # Apply system locale to this program
 locale.setlocale(locale.LC_ALL, '')
@@ -172,7 +182,7 @@ def clean(tray_icon=None):
 
 def stop():
     global keyboard_listener,mouse_listener
-    if get_config_display_free_off() == True:
+    if get_config_display_free_off() == True and PYNPUT_AVAILABLE:
         keyboard_listener.stop()  
         time.sleep(0.1)
         keyboard_listener.join(timeout=0.5)
@@ -362,9 +372,16 @@ try:
     wait_for_empty_queue(10)
     scheduler_init()
 except Exception as e:
-    messagebox.showerror(_("Error"), _("Error: ") + f'{e}')
     logger.error(f'init error {e}')
-    start_configure()
+    # Try to show error dialog only if display is available
+    if os.environ.get('DISPLAY') or platform.system() == "Windows":
+        try:
+            messagebox.showerror(_("Error"), _("Error: ") + f'{e}')
+        except:
+            pass  # Ignore if messagebox fails
+    print(f"[ERROR] Initialization failed: {e}")
+    import traceback
+    traceback.print_exc()
     clean_stop(tray_icon)
 
 close_windowtoast = utils.WindowToast(_('WeAct Studio System Monitor') + " " + utils.get_version(),_("The icon has been displayed in the tray. Click the icon to open the configuration."),icon=Path(__file__).parent / "res" / "icons" / "logo.png")
@@ -422,7 +439,7 @@ if tray_icon and platform.system() == "Darwin":  # macOS-specific
                 start_main()
                 app_exit()
 
-            if get_config_display_free_off() == True:
+            if get_config_display_free_off() == True and PYNPUT_AVAILABLE:
                 display_free_off_tick = display_free_off_tick + 1
                 if activity == False:
                     if display_free_off_tick > IDLE_THRESHOLD * 2:
@@ -517,7 +534,7 @@ elif platform.system() == "Windows":  # Windows-specific
                     start_main()
                     app_exit()
                 
-                if get_config_display_free_off() == True:
+                if get_config_display_free_off() == True and PYNPUT_AVAILABLE:
                     display_free_off_tick = display_free_off_tick + 1
                     if activity == False:
                         if display_free_off_tick > IDLE_THRESHOLD * 2:

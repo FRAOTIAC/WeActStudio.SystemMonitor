@@ -1,4 +1,4 @@
-# WeAct Studio System Monitor
+# USB Display System Monitor
 
 <div align="center">
 
@@ -7,7 +7,7 @@
 ![License](https://img.shields.io/badge/license-GPL--3.0-green.svg)
 [![GitHub Stars](https://img.shields.io/github/stars/FRAOTIAC/WeActStudio.SystemMonitor?style=social)](https://github.com/FRAOTIAC/WeActStudio.SystemMonitor)
 
-**Open source system monitor and photo album software for USB-C displays**
+**Personal fork with Raspberry Pi ARM64 support and cross-platform improvements**
 
 [English](#) | [中文文档](#中文文档)
 
@@ -17,7 +17,13 @@
 
 ## 📖 Overview
 
-A feature-rich Python application that transforms WeAct Studio USB-C displays into real-time system monitors, photo albums, and customizable information displays. Based on the excellent [turing-smart-screen-python](https://github.com/mathoudebine/turing-smart-screen-python) project with enhanced features and platform support.
+A **personal fork** of the excellent [turing-smart-screen-python](https://github.com/mathoudebine/turing-smart-screen-python) project, enhanced with:
+- **Full Raspberry Pi ARM64 support** - Tested on Raspberry Pi OS
+- **Improved cross-platform compatibility** - Better Linux/macOS support
+- **Headless environment optimization** - Works without X display
+- **Bug fixes** - Runtime errors and dependency issues resolved
+
+This Python application transforms small USB serial displays into real-time system monitors, photo albums, and customizable information displays.
 
 ### ✨ Key Features
 
@@ -34,18 +40,20 @@ A feature-rich Python application that transforms WeAct Studio USB-C displays in
 
 ## 🖼️ Supported Hardware
 
-### WeAct Studio Display FS V1 (3.5 Inch)
-- **Resolution**: 320 × 480 RGB565
-- **Communication**: USB2.0 FS (CDC)
-- **Sensors**: Temperature + Humidity
-- **Size**: 58.5mm × 87.7mm
-- **Features**: Large display, ideal for detailed monitoring
+This fork supports small LCD displays using USB serial communication (CDC protocol), primarily tested with:
 
-### WeAct Studio Display FS 0.96 Inch
+### 3.5" Display (Revision A)
+- **Resolution**: 320 × 480 RGB565
+- **Connection**: USB Type-A to serial (CDC)
+- **Sensors**: Temperature + Humidity sensor support
+- **Use Case**: Large display, ideal for detailed monitoring
+
+### 0.96" Display (Revision B)
 - **Resolution**: 80 × 160 RGB565
-- **Communication**: USB2.0 FS (CDC)
-- **Size**: Compact form factor
-- **Features**: Perfect for space-constrained setups
+- **Connection**: USB Type-A to serial (CDC)
+- **Use Case**: Compact form factor for space-constrained setups
+
+> **Note**: This project works with LCD displays that communicate via USB serial (CDC protocol). The displays typically use a standard USB Type-A connector.
 
 ---
 
@@ -55,7 +63,7 @@ A feature-rich Python application that transforms WeAct Studio USB-C displays in
 
 - **Python**: 3.9 or higher
 - **Operating System**: Windows 10+, Linux (Debian/Ubuntu/Raspberry Pi OS), macOS 10.14+
-- **USB Port**: Available USB port for display connection
+- **Hardware**: USB port for connecting the display (standard USB Type-A)
 
 ### Installation
 
@@ -338,7 +346,7 @@ This is normal. The `FREE_OFF` feature will be disabled, but all monitoring func
 ## 📁 Project Structure
 
 ```
-WeActStudio.SystemMonitor/
+SystemMonitor/
 ├── main.py                 # Main application entry
 ├── simple-program.py       # Simple demo program
 ├── configure.py            # Configuration GUI
@@ -388,23 +396,20 @@ pip install -r requirements.txt
 
 This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
 
-### Credits
+### Credits & Acknowledgments
+
+This is a **personal fork** maintained independently with focus on ARM64/Raspberry Pi support.
 
 - **Original Project**: [turing-smart-screen-python](https://github.com/mathoudebine/turing-smart-screen-python) by Matthieu Houdebine
-- **Hardware**: [WeAct Studio](https://github.com/WeActStudio)
-- **Contributors**: See [CONTRIBUTORS.md](CONTRIBUTORS.md)
+- **Fork Maintainer**: [FRAOTIAC](https://github.com/FRAOTIAC)
+- **Hardware Documentation**: Based on publicly available USB-C display specifications
 
 ---
 
-## 🔗 Links
+## 🔗 Related Projects
 
-- **WeAct Studio Official**:
-  - Taobao: [weactstudio.taobao.com](https://weactstudio.taobao.com)
-  - AliExpress: [weactstudio.aliexpress.com](https://weactstudio.aliexpress.com)
-  - GitHub: [github.com/WeActStudio](https://github.com/WeActStudio)
-  - Blog: [www.weact-tc.cn](https://www.weact-tc.cn)
-
-- **Original Project**: [github.com/mathoudebine/turing-smart-screen-python](https://github.com/mathoudebine/turing-smart-screen-python)
+- **Original Project**: [turing-smart-screen-python](https://github.com/mathoudebine/turing-smart-screen-python) by Matthieu Houdebine
+- **Hardware Reference**: [WeAct Studio GitHub](https://github.com/WeActStudio) (Hardware manufacturer's technical resources)
 
 ---
 
@@ -448,8 +453,10 @@ If you find this project useful, please consider giving it a star!
 
 <div align="center">
 
-**Made with ❤️ by the community**
+**Personal fork maintained by [FRAOTIAC](https://github.com/FRAOTIAC)**
 
-[⬆ Back to Top](#weact-studio-system-monitor)
+Based on the excellent work of the [turing-smart-screen-python](https://github.com/mathoudebine/turing-smart-screen-python) community
+
+[⬆ Back to Top](#usb-display-system-monitor)
 
 </div>

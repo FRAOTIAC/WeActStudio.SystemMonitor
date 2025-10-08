@@ -38,7 +38,7 @@ from library.log import logger
 # Set your COM port e.g. COM3 for Windows, /dev/ttyACM0 for Linux, etc. or "AUTO" for auto-discovery
 # COM_PORT = "/dev/ttyACM0"
 # COM_PORT = "COM5"
-COM_PORT = "/dev/ttyACM0"  # Changed from AUTO to explicit port
+COM_PORT = "/dev/ttyACM1"  # Changed from AUTO to explicit port
 
 # Display revision:
 # - A_320x480  for WeAct Studio Display FS V1 (3.5 inch)
